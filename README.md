@@ -4,4 +4,5 @@ Deploy:
 3. Run ```gcloud functions deploy put_expense --runtime ruby30 --trigger-http --allow-unauthenticated``` .
 
 Run locally
-1. Run ```bundle exec functions-framework-ruby --target=put_expense --port=3000```
+1. Update application.yml and google_key.json with correct values.
+2. Run ```bundle exec functions-framework-ruby --target=put_expense --port=3000```
