@@ -1,0 +1,15 @@
+default: &default
+  google_project_id: 'google_project_id'
+  firestore_table_name: 'test'
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+
+staging:
+  <<: *default
+
+production:
+  <<: *default
