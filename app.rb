@@ -24,7 +24,7 @@ class Settings
   end
 end
 
-firestore = Google::Cloud::Firestore.new(
+Firestore = Google::Cloud::Firestore.new(
   project_id: Settings.app[:google_project_id],
   credentials: "./config/google_key.json"
 )
@@ -36,11 +36,11 @@ FunctionsFramework.http "put_expense" do |request|
     missed_fields_err = validate_fields(spend_event)
     raise StandardError.new(missed_fields_err) if !missed_fields_err.blank?
 
-    db_event = { user_name: spend_event['user_name'], amount: spend_event['amount'].strip.to_f, created_at: Time.now.to_i,
+    created_at_timestamp = !spend_event['created_at'].blank? && Time.parse(spend_event['created_at']).to_i || Time.now.to_i
+    db_event = { user_name: spend_event['user_name'], amount: spend_event['amount'].to_f, created_at: created_at_timestamp,
                  currency: spend_event['currency'].strip.downcase, category: spend_event['category'].strip.downcase, place: spend_event['place']&.strip }
     puts db_event.inspect
-    response = create_record(db_event, firestore, Settings.app[:firestore_table_name])
-    # response = OpenStruct.new(update_time: DateTime.now)
+    response = create_record(db_event, Settings.app[:firestore_table_name])
     return { status: 200, message: 'Saved!', event_saved_at: response.update_time.to_s }
   rescue Exception => ex
     puts ex.inspect
@@ -50,8 +50,8 @@ end
 
 private
 
-def create_record(db_event, database, table_name)
-  Settings.fake_db? ? OpenStruct.new(update_time: DateTime.now) : database.col(table_name).doc.set(db_event)
+def create_record(db_event, table_name)
+  Settings.fake_db? ? OpenStruct.new(update_time: DateTime.now) : Firestore.col(table_name).doc.set(db_event)
 end
 
 def validate_fields(spend_event)
@@ -60,7 +60,6 @@ def validate_fields(spend_event)
 
   missed_fields_err = ''
   missed_fields_err << 'Username is missed! ' if spend_event['user_name'].blank?
-  missed_fields_err << 'Amount is missed! ' if amount.blank?
   Float(amount) rescue (missed_fields_err << 'Amount should be a number! ')
   missed_fields_err << 'Currency is missed! ' if currency.blank?
   missed_fields_err << "Currency Name should an ISO 4217 Code, example 'USD'! " unless ISO_CURRENCIES.include?(currency.downcase)
